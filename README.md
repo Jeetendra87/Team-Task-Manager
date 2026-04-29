@@ -227,33 +227,47 @@ frontend/src
 
 ---
 
-## Deployment
+## Deployment (Railway)
 
-### Backend → Railway
+Deploy as three services in one Railway project: **MongoDB**, **backend**, **frontend**.
 
-1. Provision MongoDB (recommend [MongoDB Atlas free tier](https://www.mongodb.com/cloud/atlas) or Railway's MongoDB plugin).
-2. Create a new Railway project → "Deploy from GitHub" → pick this repo, **root directory = `backend`**.
-3. Railway auto-detects the `Dockerfile` and `railway.json` (health check at `/health`).
-4. Set env vars:
-   - `MONGODB_URI` — Atlas SRV connection string
-   - `JWT_SECRET` — `openssl rand -hex 48`
-   - `NODE_ENV=production`
-   - `CORS_ORIGIN` — your deployed frontend URL
-5. Generate a public domain and copy the URL.
+### 1. MongoDB
+**+ New → Database → Add MongoDB.**
 
-### Frontend → Vercel
+### 2. Backend
+**+ New → GitHub Repo** → set **Root Directory: `backend`**, then add variables:
 
-1. Import the repo, **root directory = `frontend`**.
-2. Vercel auto-detects Vite (the `vercel.json` adds the SPA rewrite).
-3. Set env var:
-   - `VITE_API_BASE_URL=https://<your-backend>.up.railway.app/api`
-4. Deploy → copy the Vercel URL back into the backend's `CORS_ORIGIN`.
+```
+MONGODB_URI = ${{ MongoDB.MONGO_URL }}
+JWT_SECRET  = <openssl rand -hex 48>
+NODE_ENV    = production
+CORS_ORIGIN = <frontend URL>     # set after step 3
+APP_URL     = <frontend URL>     # used in password-reset emails
+```
 
-### Frontend → Railway (alternative)
+Generate a public domain.
 
-Vercel is simpler for a static SPA, but Railway works too — point a service at `frontend/`, build with `npm run build`, and serve `dist/` with any static server (e.g. `npx serve -s dist`).
+### 3. Frontend
+**+ New → GitHub Repo** → set **Root Directory: `frontend`**, then add:
 
----
+```
+VITE_API_BASE_URL = https://<backend-domain>/api
+```
+
+Generate a public domain. Then go back to the backend service and set `CORS_ORIGIN` and `APP_URL` to this frontend URL.
+
+> `VITE_*` vars are baked in at build time — changing them requires a redeploy.
+
+### Optional: send password-reset emails
+Add SMTP vars to the backend service (any provider — SendGrid, Resend, Mailgun, Gmail SMTP, etc.):
+
+```
+SMTP_HOST  SMTP_PORT  SMTP_USER  SMTP_PASS  SMTP_FROM
+```
+
+Without these, reset links are logged to the backend's Railway logs.
+
+
 
 ## Available scripts
 
@@ -273,18 +287,3 @@ npm run preview  # preview the built app
 
 ---
 
-## Roadmap (intentionally not in MVP)
-
-- Real-time updates with Socket.io
-- Team chat / file attachments / activity log
-- Email notifications (assignment + due-date reminders)
-- Calendar view + recurring tasks
-- Refresh-token rotation + httpOnly cookies
-- Dark mode
-- E2E + integration test suite
-
----
-
-## License
-
-MIT
