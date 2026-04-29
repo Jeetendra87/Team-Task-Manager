@@ -3,12 +3,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import AuthShell from "@/components/layout/AuthShell";
 import Input from "@/components/ui/Input";
+import PasswordInput from "@/components/ui/PasswordInput";
+import PasswordStrength from "@/components/ui/PasswordStrength";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import { api, apiError } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
-import { AuthShell } from "./Login";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
@@ -29,11 +31,14 @@ export default function Signup() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { role: "member" },
   });
+
+  const password = watch("password", "");
 
   if (token) return <Navigate to="/dashboard" replace />;
 
@@ -49,28 +54,46 @@ export default function Signup() {
   };
 
   return (
-    <AuthShell title="Create your account" subtitle="Set up your team workspace in seconds.">
+    <AuthShell
+      title="Create your account"
+      subtitle="Set up your team workspace in seconds."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-brand-600 hover:underline"
+          >
+            Sign in
+          </Link>
+        </>
+      }
+    >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="Full name"
           autoComplete="name"
+          placeholder="Jane Doe"
           {...register("name")}
           error={errors.name?.message}
         />
         <Input
-          label="Email"
+          label="Work email"
           type="email"
           autoComplete="email"
+          placeholder="you@company.com"
           {...register("email")}
           error={errors.email?.message}
         />
-        <Input
-          label="Password"
-          type="password"
-          autoComplete="new-password"
-          {...register("password")}
-          error={errors.password?.message}
-        />
+        <div>
+          <PasswordInput
+            label="Password"
+            autoComplete="new-password"
+            {...register("password")}
+            error={errors.password?.message}
+          />
+          <PasswordStrength value={password} />
+        </div>
         <Select
           label="Role"
           {...register("role")}
@@ -83,13 +106,11 @@ export default function Signup() {
         <Button type="submit" loading={isSubmitting} className="w-full">
           Create account
         </Button>
+        <p className="text-center text-xs text-slate-500">
+          By creating an account, you agree to our terms and acknowledge our
+          privacy policy.
+        </p>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-600">
-        Already have an account?{" "}
-        <Link to="/login" className="font-medium text-brand-600 hover:underline">
-          Sign in
-        </Link>
-      </p>
     </AuthShell>
   );
 }
